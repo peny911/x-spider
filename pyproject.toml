@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "x-spider"
+version = "0.1.0"
+description = "Local X media downloader powered by Playwright and SQLite."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "httpx>=0.27.0",
+  "pillow>=10.0.0",
+  "playwright>=1.45.0",
+  "pydantic-settings>=2.3.0",
+  "rich>=13.7.0",
+  "sqlalchemy>=2.0.30",
+  "typer>=0.12.3",
+]
+
+[project.scripts]
+x-spider = "x_spider.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/x_spider"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
