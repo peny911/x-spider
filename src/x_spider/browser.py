@@ -30,6 +30,9 @@ async def persistent_context(settings: Settings) -> AsyncIterator[BrowserContext
                 "width": settings.viewport_width,
                 "height": settings.viewport_height,
             },
+            "args": [
+                "--disable-blink-features=AutomationControlled",  # 关键：隐藏自动化标记
+            ]
         }
         browser_executable_path = settings.resolved_browser_executable_path
         if browser_executable_path:
