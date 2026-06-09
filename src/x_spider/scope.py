@@ -65,6 +65,23 @@ class CrawlSpec:
         return f"q_{slug_text(self.keyword)}"
 
 
+def download_scope_parts(spec: CrawlSpec, tweet_author: str | None = None) -> tuple[str, str]:
+    if spec.mentions:
+        model = "_".join(spec.mentions)
+        author = "_".join(spec.publishers) or normalize_handle(tweet_author or "")
+        if author:
+            return "users", f"{model}/{author}"
+        return "users", model
+    if spec.task_type == "user" and spec.publishers:
+        return "users", spec.publishers[0]
+    return spec.scope_type, spec.scope_name
+
+
+def download_scope_name(spec: CrawlSpec, tweet_author: str | None = None) -> str:
+    scope_type, scope_name = download_scope_parts(spec, tweet_author)
+    return f"{scope_type}/{scope_name}" if scope_name else scope_type
+
+
 def media_filter(media_type: str) -> str:
     if media_type == "images":
         return "filter:images"
@@ -73,20 +90,25 @@ def media_filter(media_type: str) -> str:
     return "filter:media"
 
 
-def build_search_url(spec: CrawlSpec) -> str:
+def build_search_url(spec: CrawlSpec, search_tab: str = "top") -> str:
     terms: list[str] = []
     for publisher in spec.publishers:
         terms.append(f"from:{publisher}")
     if spec.mentions:
         mention_terms = [f"@{mention}" for mention in spec.mentions]
-        terms.append(" OR ".join(mention_terms))
+        mention_query = " OR ".join(mention_terms)
+        if len(mention_terms) > 1:
+            mention_query = f"({mention_query})"
+        terms.append(mention_query)
     if spec.keyword:
         terms.append(spec.keyword)
     terms.append(media_filter(spec.media_type))
     query = quote(" ".join(terms))
-    return f"https://x.com/search?q={query}&src=typed_query&f=live"
+    url = f"https://x.com/search?q={query}&src=typed_query"
+    if search_tab == "latest":
+        url += "&f=live"
+    return url
 
 
 def build_user_url(handle: str) -> str:
     return f"https://x.com/{normalize_handle(handle)}"
-

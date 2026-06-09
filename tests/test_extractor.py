@@ -45,6 +45,44 @@ class ExtractorTests(unittest.TestCase):
         self.assertEqual(len(tweets[0].media), 1)
         self.assertEqual(tweets[0].media[0].media_identity, "image:pbs.twimg.com/media/abc")
 
+    def test_parse_extracted_articles_keeps_tweets_without_media(self) -> None:
+        raw = [
+            {
+                "statusUrl": "https://x.com/author/status/456",
+                "authorHandle": "author",
+                "text": "text only",
+                "imageUrls": [],
+            }
+        ]
+
+        tweets = parse_extracted_articles(raw)
+
+        self.assertEqual(len(tweets), 1)
+        self.assertEqual(tweets[0].tweet_id, "456")
+        self.assertEqual(len(tweets[0].media), 0)
+
+    def test_parse_extracted_articles_keeps_video_marker(self) -> None:
+        raw = [
+            {
+                "statusUrl": "https://x.com/author/status/789",
+                "authorHandle": "author",
+                "text": "video",
+                "imageUrls": [],
+                "videoUrls": [
+                    "https://x.com/author/status/789",
+                    "https://pbs.twimg.com/ext_tw_video_thumb/789/pu/img/abc.jpg",
+                ],
+            }
+        ]
+
+        tweets = parse_extracted_articles(raw)
+
+        self.assertEqual(len(tweets), 1)
+        self.assertEqual(len(tweets[0].media), 1)
+        self.assertEqual(tweets[0].media[0].media_type, "video")
+        self.assertEqual(tweets[0].media[0].source_url, "https://x.com/author/status/789")
+        self.assertEqual(tweets[0].media[0].media_identity, "video:789")
+
 
 if __name__ == "__main__":
     unittest.main()

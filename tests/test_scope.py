@@ -41,6 +41,23 @@ class ScopeTests(unittest.TestCase):
         self.assertIn("%40authorB", url)
         self.assertIn("%E8%8B%B9%E6%9E%9C", url)
         self.assertIn("filter%3Aimages", url)
+        self.assertNotIn("&f=live", url)
+
+    def test_build_user_search_url_with_mentions(self) -> None:
+        spec = CrawlSpec(
+            task_type="user",
+            media_type="images",
+            publishers=("authorA",),
+            mentions=("authorB", "authorC"),
+        )
+        url = build_search_url(spec)
+        self.assertIn("from%3AauthorA", url)
+        self.assertIn("%28%40authorB%20OR%20%40authorC%29", url)
+
+    def test_build_search_url_latest_tab(self) -> None:
+        spec = CrawlSpec(task_type="search", media_type="images", keyword="苹果")
+        url = build_search_url(spec, search_tab="latest")
+        self.assertIn("&f=live", url)
 
 
 if __name__ == "__main__":

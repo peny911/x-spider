@@ -30,9 +30,6 @@ async def persistent_context(settings: Settings) -> AsyncIterator[BrowserContext
                 "width": settings.viewport_width,
                 "height": settings.viewport_height,
             },
-            "args": [
-                "--disable-blink-features=AutomationControlled",  # 关键：隐藏自动化标记
-            ]
         }
         browser_executable_path = settings.resolved_browser_executable_path
         if browser_executable_path:
@@ -48,24 +45,8 @@ async def persistent_context(settings: Settings) -> AsyncIterator[BrowserContext
             **launch_options,
         )
 
-        # context.add_init_script(
-        #     """
-        #         // 隐藏webdriver属性
-        #         Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-        #         // 伪装Chrome对象
-        #         window.chrome = {runtime: {}};
-        #         // 伪装plugins
-        #         Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3]});
-        #         // 伪装languages
-        #         Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
-        #         // 伪装platform
-        #         Object.defineProperty(navigator, 'platform', {get: () => 'Win32'});
-        #         // 伪装userAgent
-        #         Object.defineProperty(navigator, 'userAgent', {get: () => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'});
-        #     """
-        # )
-
         try:
             yield context
         finally:
-            await context.close()
+            if settings.close_browser_on_finish:
+                await context.close()

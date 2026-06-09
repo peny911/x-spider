@@ -44,6 +44,10 @@ def image_identity(url: str) -> str:
     return f"image:{parsed.netloc}{parsed.path}"
 
 
+def video_identity(tweet_id: str) -> str:
+    return f"video:{tweet_id}"
+
+
 def parse_datetime(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -65,13 +69,24 @@ def parse_extracted_articles(raw_items: list[dict]) -> list[ExtractedTweet]:
             continue
 
         image_urls = item.get("imageUrls") or []
-        media = tuple(
+        image_media = tuple(
             ExtractedMedia(media_type="image", source_url=url, media_identity=image_identity(url))
             for url in image_urls
             if "pbs.twimg.com/media" in url
         )
-        if not media:
-            continue
+        video_urls = item.get("videoUrls") or []
+        video_media = (
+            (
+                ExtractedMedia(
+                    media_type="video",
+                    source_url=status_url,
+                    media_identity=video_identity(tweet_id),
+                ),
+            )
+            if video_urls
+            else ()
+        )
+        media = image_media + video_media
 
         seen.add(tweet_id)
         tweets.append(
@@ -94,8 +109,19 @@ articles => articles.map(article => {
   const statusHref = statusLink ? statusLink.href : null;
 
   const timeEl = article.querySelector('time');
-  const imageUrls = Array.from(article.querySelectorAll('img[src*="pbs.twimg.com/media"]'))
-    .map(img => img.currentSrc || img.src)
+  const imageUrls = Array.from(article.querySelectorAll('img'))
+    .flatMap(img => {
+      const values = [img.currentSrc, img.src];
+      const srcset = img.getAttribute('srcset') || '';
+      for (const part of srcset.split(',')) {
+        const url = part.trim().split(/\\s+/)[0];
+        if (url) values.push(url);
+      }
+      return values;
+    })
+    .filter(url => url && url.includes('pbs.twimg.com/media'));
+  const videoUrls = Array.from(article.querySelectorAll('video, div[data-testid="videoPlayer"], img[src*="ext_tw_video_thumb"], img[src*="tweet_video_thumb"]'))
+    .map(el => el.currentSrc || el.src || el.poster || statusHref)
     .filter(Boolean);
 
   let authorHandle = null;
@@ -110,7 +136,7 @@ articles => articles.map(article => {
     text: article.innerText || '',
     publishedAt: timeEl ? timeEl.getAttribute('datetime') : null,
     imageUrls: Array.from(new Set(imageUrls)),
+    videoUrls: Array.from(new Set(videoUrls)),
   };
 })
 """
-
